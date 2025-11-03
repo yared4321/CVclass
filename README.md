@@ -1,100 +1,109 @@
-# CVclass — Assignment 1
+# CVclass
 
-## 1. Building the equation system for a projective transformation
+assignment 1 :
 
-We want to express the homography as:
+1. Build a system of equations of the form 𝐴𝑥 = 𝑏, as learned in class, for projective
+   transformation. Attach the formula development to your exercise solution. How do we get the
+   conversion matrix from the equation system?
+2. Write a function that estimates the transformation coefficients from source (src) to destination
+   (dst), from the equation system in section 1.
 
+---
+
+## Answer:
+
+### 1. Ax = b when:
+
+```text
+A = [[h00 h01 h02]
+     [h10 h11 h12]
+     [h20 h21 h22]]
+
+b = X_hat(without normalize) = [
+    x_h_raw
+    y_h_raw
+    w
+]
+
+x = source point = [
+    x
+    y
+    1
+]
 ```
-A h = 0
-```
-
-where the homography vector is:
-
-```
-h = [h00 h01 h02 h10 h11 h12 h20 h21 h22]^T
-```
-
-Given a source point:
-
-```
-x = [x, y, 1]
-```
-
-and destination point:
-
-```
-x_dst = [x_dst, y_dst]
-```
-
-the projective mapping is:
 
 ```
 w = h20*x + h21*y + h22
-
-x_dst = (h00*x + h01*y + h02) / w
-y_dst = (h10*x + h11*y + h12) / w
+x_dst = x_h_raw/w = h00*x + h01*y + h02*1 / (h20*x + h21*y + h22)
+y_dst = y_h_raw/w = h10*x + h11*y + h12*1 / (h20*x + h21*y + h22)
 ```
 
-Rearranging:
+### arrangment
 
-```
-x_dst*(h20*x + h21*y + h22) - (h00*x + h01*y + h02) = 0
-y_dst*(h20*x + h21*y + h22) - (h10*x + h11*y + h12) = 0
-```
+```text
+x_dst*(h20*x + h21*y + h22) = h00*x + h01*y + h02*1
+y_dst*(h20*x + h21*y + h22) = h10*x + h11*y + h12*1
 
-Each correspondence gives two rows in A:
-
-```
-[-x  -y  -1   0   0   0   x_dst*x   x_dst*y   x_dst]
-[ 0   0   0  -x  -y  -1   y_dst*x   y_dst*y   y_dst]
+x_dst*(h20*x + h21*y + h22) - (h00*x + h01*y + h02*1) = 0
+y_dst*(h20*x + h21*y + h22) - (h10*x + h11*y + h12*1) = 0
 ```
 
-Thus:
+```text
+h20*x_dst*x + h21*x_dst*y + h22*x_dst - h00*x - h01*y - h02*1 = 0
+h20*y_dst*x + h21*y_dst*y + h22*y_dst - h10*x - h11*y - h12*1 = 0
+```
+
+We want to have h vector such that:
+
+```text
+h = [h00 h01 h02 h10 h11 h12 h20 h21 h22]^T
+```
+
+Therefore:
+
+```text
+[[-x, -y, -1,  0,  0,  0,  x_dst*x,  x_dst*y,  x_dst],
+ [ 0,  0,  0, -x, -y, -1,  y_dst*x,  y_dst*y,  y_dst]]
+```
+
+---
+
+From this equation = Ah = 0  
+We want to find the smallest value h such that:
 
 ```
-A h = 0
-```
-
-To avoid the trivial solution **h = 0**, we constrain:
-
-```
+min ||Ah||
+and
 ||h|| = 1
 ```
 
-and solve:
+so that **h = 0** is not a trivial solution.
+
+---
+
+### The loss function:
 
 ```
-min ||A h||  subject to  ||h|| = 1
+(1 - Gamma)*hTh - hTATAh = 0
 ```
 
-The loss function:
+Gamma — penalty for h constrain  
+hTATAh = such that the norm goes to 0
+
+### the derivative:
 
 ```
-(1 - Γ) h^T h  -  h^T A^T A h
+-2Gamma*h - 2ATAh = 0
 ```
 
-Derivative:
+### and the solution:
 
 ```
--2 Γ h - 2 A^T A h = 0
+(Gamma - ATA) * h = 0
 ```
 
-Rearranged:
+which means the solution is the eigen vector of the smallest eigen value:
 
 ```
-(Γ I - A^T A) h = 0
-```
-
-This is an eigenvalue problem.  
-The solution is the eigenvector corresponding to the smallest eigenvalue of:
-
-```
-A^T A
-```
-
-which is the right singular vector of A (SVD):
-
-```
-A = U Σ V^T
-h = last column of V
+h = min(V)
 ```
