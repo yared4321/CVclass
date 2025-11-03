@@ -43,7 +43,7 @@ class Solution:
             x,y = match_p_src[0][i],match_p_src[1][i]
             x_hat,y_hat = match_p_dst[0][i],match_p_dst[1][i]
 
-            row_1 = [ -x, -y, 1, 0, 0, 0, x*x_hat, y*x_hat, x_hat ]
+            row_1 = [ -x, -y, -1, 0, 0, 0, x*x_hat, y*x_hat, x_hat ]
             row_2 = [ 0,  0,  0, -x, -y, -1, x*y_hat, y*y_hat, y_hat]
             
             point_matrix.append(row_1)
