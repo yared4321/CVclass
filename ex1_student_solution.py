@@ -31,11 +31,10 @@ class Solution:
         Returns:
             Homography from source to destination, 3x3 numpy array.
         """
-        num_of_points = match_p_dst[0].shape[0]
         # return homography
         """INSERT YOUR CODE HERE"""
         ### build A ###
-        
+        num_of_points = match_p_dst[0].shape[0]
         # point_matrix = np.zeros(9,num_of_points*2)
         point_matrix = []
 
@@ -192,7 +191,26 @@ class Solution:
         """
         # return fit_percent, dist_mse
         """INSERT YOUR CODE HERE"""
-        pass
+        dist_mse = 10 ** 9
+        # apply homography to match points in source image
+        estimated_p_dst = np.matmul(homography, np.vstack([match_p_src, np.ones((1, match_p_src.shape[1]))]))
+        estimated_p_dst = estimated_p_dst[:2, :] / estimated_p_dst[2, :]
+
+        distances = np.linalg.norm(estimated_p_dst - match_p_dst, axis=0)
+
+        # find inliers based on maximum error allowed
+        is_inlier = distances < max_err
+
+        # calculate fit_percent and mean squared error for inliers
+        n_inliers = np.sum(is_inlier)
+        total_points = match_p_src.shape[1]
+        fit_percent = n_inliers / total_points
+
+        if n_inliers:
+            dist_mse = np.sum(distances[is_inlier]**2) / total_points
+
+        return fit_percent, dist_mse
+
 
     @staticmethod
     def meet_the_model_points(homography: np.ndarray,
@@ -221,7 +239,14 @@ class Solution:
         """
         # return mp_src_meets_model, mp_dst_meets_model
         """INSERT YOUR CODE HERE"""
-        pass
+        # apply homography to match points in source image
+        estimated_p_dst = np.matmul(homography, np.vstack([match_p_src, np.ones((1, match_p_src.shape[1]))]))
+        estimated_p_dst = estimated_p_dst[:2, :] / estimated_p_dst[2, :]
+
+        distances = np.linalg.norm(estimated_p_dst - match_p_dst, axis=0)
+        is_inlier = distances < max_err
+
+        return match_p_src[:, is_inlier], match_p_dst[:, is_inlier]
 
     def compute_homography(self,
                            match_p_src: np.ndarray,
@@ -241,21 +266,43 @@ class Solution:
         Returns:
             homography: Projective transformation matrix from src to dst.
         """
-        # # use class notations:
-        # w = inliers_percent
-        # # t = max_err
-        # # p = parameter determining the probability of the algorithm to
-        # # succeed
-        # p = 0.99
-        # # the minimal probability of points which meets with the model
-        # d = 0.5
-        # # number of points sufficient to compute the model
-        # n = 4
-        # # number of RANSAC iterations (+1 to avoid the case where w=1)
-        # k = int(np.ceil(np.log(1 - p) / np.log(1 - w ** n))) + 1
-        # return homography
+        # use class notations:
+        w = inliers_percent
+        # t = max_err
+        # p = parameter determining the probability of the algorithm to
+        # succeed
+        p = 0.99
+        # the minimal probability of points which meets with the model
+        d = 0.5
+        # number of points sufficient to compute the model
+        n = 4
+        # number of RANSAC iterations (+1 to avoid the case where w=1)
+        k = int(np.ceil(np.log(1 - p) / np.log(1 - w ** n))) + 1
+
         """INSERT YOUR CODE HERE"""
-        pass
+
+        min_score = np.inf
+        output_homography = np.zeros(shape=(3, 3))
+
+        for i in range(k):
+            rand_n = sample(range(0, match_p_src.shape[1]), n)
+            rand_p_src = match_p_src[:, rand_n]
+            rand_p_dst = match_p_dst[:, rand_n]
+
+            homography = self.compute_homography_naive(rand_p_src, rand_p_dst)
+            fit_percent, dist_mse = self.test_homography(homography, match_p_src, match_p_dst, max_err)
+            if fit_percent > d:
+                inliers_p_src, inliers_p_dst = (
+                    self.meet_the_model_points(homography, match_p_src, match_p_dst, max_err))
+                inliers_homography = self.compute_homography_naive(inliers_p_src, inliers_p_dst)
+                fit_percent, dist_mse = self.test_homography(inliers_homography, inliers_p_src, inliers_p_dst, max_err)
+                if dist_mse < min_score:
+                    output_homography = inliers_homography
+                    min_score = dist_mse
+
+        output_homography /= np.linalg.norm(output_homography)
+
+        return output_homography
 
     @staticmethod
     def compute_backward_mapping(
