@@ -13,7 +13,7 @@ from ex1_student_solution import Solution
 # Don't forget to fill in your IDs!!!
 # students' IDs:
 ID1 = '311243687'
-ID2 = '987654321'
+ID2 = '203664743'
 #########################################################
 
 
@@ -65,7 +65,7 @@ def main():
     plt.figure()
     forward_panorama_slow_plot = plt.imshow(transformed_image)
     plt.title('Forward Homography Slow implementation')
-    plt.show()
+    # plt.show()
 
     # Plot naive homography with forward mapping, fast implementation
     tt = time.time()
@@ -78,7 +78,7 @@ def main():
     plt.figure()
     forward_panorama_fast_plot = plt.imshow(transformed_image_fast)
     plt.title('Forward Homography Fast implementation')
-    plt.show()
+    # plt.show()
 
     # loading data with imperfect matches
     src_img, dst_img, match_p_src, match_p_dst = load_data(False)
@@ -123,6 +123,22 @@ def main():
     print('RANSAC Homography {:5.4f} sec'.format(toc(tt)))
     print(ransac_homography)
 
+    ransac_image_fast = solution.compute_forward_homography_fast(
+        homography=ransac_homography,
+        src_image=src_img,
+        dst_image_shape=dst_img.shape)
+
+    print('Image Using RANSAC Homography')
+    plt.figure()
+    ransac_plot = plt.imshow(ransac_image_fast)
+    plt.title('RANSAC Homography')
+    # plt.show()
+
+    plt.figure()
+    forward_panorama_imperfect_matches_plot = plt.imshow(transformed_image_fast)
+    plt.title('RANSAC Homography - Fast Computation')
+    # plt.show()
+
     # Test RANSAC homography
     tt = tic()
     fit_percent, dist_mse = solution.test_homography(ransac_homography,
@@ -131,6 +147,20 @@ def main():
                                                      max_err)
     print('RANSAC Homography Test {:5.4f} sec'.format(toc(tt)))
     print([fit_percent, dist_mse])
+
+    # backward wrap example
+    backward_homography = solution.compute_homography(match_p_dst, match_p_src,
+                                                      inliers_percent,
+                                                      max_err=25)
+    img = solution.compute_backward_mapping(
+        backward_projective_homography=backward_homography,
+        src_image=src_img,
+        dst_image_shape=dst_img.shape)
+    plt.figure()
+    import numpy as np
+    student_backward_warp_img = plt.imshow(img.astype(np.uint8))
+    plt.title('Backward warp example')
+    # plt.show()
 
     # Build panorama
     tt = tic()
