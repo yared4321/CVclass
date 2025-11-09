@@ -332,7 +332,22 @@ class Solution:
 
         # return backward_warp
         """INSERT YOUR CODE HERE"""
-        pass
+        dst_rows, dst_cols = np.meshgrid(range(dst_image_shape[0]), range(dst_image_shape[1]), indexing='ij')
+        dst_coordinates = np.stack((dst_rows, dst_cols, np.ones(dst_image_shape[:2])), axis=2)
+        src_coordinates = np.matmul(backward_projective_homography, dst_coordinates.reshape(-1, 3).T)
+        src_coordinates[:2, :] /= src_coordinates[2]
+
+        src_rows, src_cols = np.meshgrid(range(src_image.shape[0]), range(src_image.shape[1]), indexing='ij')
+        backward_warp = np.zeros(dst_image_shape, dtype=np.uint8)
+
+        for channel in range(src_image.shape[2]):
+            channel_data = src_image[:, :, channel].flatten()
+            warped_channel = griddata((src_rows.flatten(), src_cols.flatten()), channel_data,
+                                      (src_coordinates[0], src_coordinates[1]), method='cubic',
+                                      fill_value=0)
+            backward_warp[:, :, channel] = warped_channel.reshape(dst_image_shape[:2])
+
+        return backward_warp
 
     @staticmethod
     def find_panorama_shape(src_image: np.ndarray,
@@ -424,7 +439,13 @@ class Solution:
         """
         # return final_homography
         """INSERT YOUR CODE HERE"""
-        pass
+        translation = np.eye(3)
+        translation[0, 2] = -pad_left
+        translation[1, 2] = -pad_up
+        final_homography = np.matmul(backward_homography, translation)
+        final_homography /= np.linalg.norm(final_homography)
+
+        return final_homography
 
     def panorama(self,
                  src_image: np.ndarray,
