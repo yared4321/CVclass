@@ -467,7 +467,7 @@ class Solution:
         translation[0, 2] = -pad_left
         translation[1, 2] = -pad_up
         final_homography = np.matmul(backward_homography, translation)
-        final_homography /= final_homography[2, 2]
+        final_homography /= np.linalg.norm(final_homography)
 
         return final_homography
 
