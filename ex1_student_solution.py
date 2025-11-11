@@ -132,15 +132,15 @@ class Solution:
         # return new_image
         """INSERT YOUR CODE HERE"""
 
-        H = src_image.shape[0]
-        W = src_image.shape[1]
+        src_H = src_image.shape[0]
+        src_W = src_image.shape[1]
 
         dst_H = dst_image_shape[0]
         dst_W = dst_image_shape[1]
 
         # mesh 
-        x = np.arange(W)
-        y = np.arange(H)
+        x = np.arange(src_W)
+        y = np.arange(src_H)
         xv, yv = np.meshgrid(x, y) 
 
         xv_flat = xv.flatten()
@@ -329,23 +329,47 @@ class Solution:
         Returns:
             The source image backward warped to the destination coordinates.
         """
+        dst_H = dst_image_shape[0]
+        dst_W = dst_image_shape[1]
+        src_H = src_image.shape[0]
+        src_W = src_image.shape[1]
+
+        # mesh 
+        #dst
+        x = np.arange(dst_W)
+        y = np.arange(dst_H)
+        xv, yv = np.meshgrid(x, y)
+        xv_flat = xv.flatten()
+        yv_flat = yv.flatten()
+        ones = np.ones_like(xv_flat)
+        
+        #src
+        src_y_grid, src_x_grid = np.indices(src_image.shape[:2])
+        src_rows, src_cols = np.meshgrid(range(src_image.shape[0]), range(src_image.shape[1]))
+        points_to_sample_from = (src_x_grid.flatten(), src_y_grid.flatten())
 
         # return backward_warp
         """INSERT YOUR CODE HERE"""
-        dst_rows, dst_cols = np.meshgrid(range(dst_image_shape[0]), range(dst_image_shape[1]), indexing='ij')
-        dst_coordinates = np.stack((dst_rows, dst_cols, np.ones(dst_image_shape[:2])), axis=2)
-        src_coordinates = np.matmul(backward_projective_homography, dst_coordinates.reshape(-1, 3).T)
-        src_coordinates[:2, :] /= src_coordinates[2]
+        backward_projective_homography = np.linalg.inv(backward_projective_homography)
+        #matrix multipication
+        dst_coordinates = np.vstack([xv_flat, yv_flat, ones])  # shape: 3 x (H*W)
+        src_coordinates = backward_projective_homography @ dst_coordinates
+        src_coordinates[:2, :] /= src_coordinates[2,:]
 
-        src_rows, src_cols = np.meshgrid(range(src_image.shape[0]), range(src_image.shape[1]), indexing='ij')
+        src_x_map = src_coordinates[0, :]
+        src_y_map = src_coordinates[1, :]
+
         backward_warp = np.zeros(dst_image_shape, dtype=np.uint8)
 
-        for channel in range(src_image.shape[2]):
-            channel_data = src_image[:, :, channel].flatten()
-            warped_channel = griddata((src_rows.flatten(), src_cols.flatten()), channel_data,
-                                      (src_coordinates[0], src_coordinates[1]), method='cubic',
-                                      fill_value=0)
-            backward_warp[:, :, channel] = warped_channel.reshape(dst_image_shape[:2])
+        for channel_num in range(src_image.shape[2]):
+            channel_data = src_image[:, :, channel_num].flatten()
+            warped_channel = griddata(  points_to_sample_from,
+                                        channel_data,
+                                        (src_x_map, src_y_map),
+                                        method='cubic',
+                                        fill_value=0
+                                      )
+            backward_warp[:, :, channel_num] = warped_channel.reshape(dst_H, dst_W)
 
         return backward_warp
 
@@ -434,7 +458,7 @@ class Solution:
         (3) Scale the homography as learnt in class.
 
         Returns:
-            A new homography which includes the backward homography and the
+            A new homography which includes the backward homoraphy and the
             translation.
         """
         # return final_homography
@@ -443,7 +467,7 @@ class Solution:
         translation[0, 2] = -pad_left
         translation[1, 2] = -pad_up
         final_homography = np.matmul(backward_homography, translation)
-        final_homography /= np.linalg.norm(final_homography)
+        final_homography /= final_homography[2, 2]
 
         return final_homography
 

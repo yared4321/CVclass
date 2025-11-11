@@ -2,6 +2,7 @@ import time
 import scipy
 import matplotlib.pyplot as plt
 import matplotlib.image as mpimg
+import numpy as np
 
 from cv2 import resize, INTER_CUBIC
 from matplotlib.patches import Circle
@@ -149,7 +150,7 @@ def main():
     print([fit_percent, dist_mse])
 
     # backward wrap example
-    backward_homography = solution.compute_homography(match_p_dst, match_p_src,
+    backward_homography = solution.compute_homography(match_p_src,match_p_dst, 
                                                       inliers_percent,
                                                       max_err=25)
     img = solution.compute_backward_mapping(
@@ -157,10 +158,10 @@ def main():
         src_image=src_img,
         dst_image_shape=dst_img.shape)
     plt.figure()
-    import numpy as np
+
     student_backward_warp_img = plt.imshow(img.astype(np.uint8))
     plt.title('Backward warp example')
-    # plt.show()
+    plt.show()
 
     # Build panorama
     tt = tic()
@@ -177,7 +178,7 @@ def main():
     course_panorama_plot = plt.imshow(img_pan)
     plt.title('Great Panorama')
     # plt.show()
-    plt.show()
+    
 
 
 def your_images_loader():
@@ -224,7 +225,7 @@ def your_images_main():
     import numpy as np
     student_forward_warp_img = plt.imshow(img.astype(np.uint8))
     plt.title('Forward warp example')
-    # plt.show()
+    plt.show()
 
     backward_homography = solution.compute_homography(match_p_dst, match_p_src,
                                                       inliers_percent,
@@ -237,7 +238,7 @@ def your_images_main():
     import numpy as np
     student_backward_warp_img = plt.imshow(img.astype(np.uint8))
     plt.title('Backward warp example')
-    # plt.show()
+    plt.show()
 
     # Build student panorama
     tt = tic()
@@ -248,7 +249,7 @@ def your_images_main():
     plt.figure()
     student_panorama = plt.imshow(img_pan)
     plt.title('Awesome Panorama')
-    # plt.show()
+    plt.show()
 
     # Build reversed student panorama
     tt = tic()
@@ -279,7 +280,7 @@ def preparatory_steps():
     plt.axis('off')
 
     plt.subplot(1,2,2)
-    plt.imshow(dst_img, cmap='gray')
+    plt.imshow(dst_img, cmap='gray')    
     plt.scatter(match_p_dst[0], match_p_dst[1], s=5, c='red', marker='o')
     plt.title(f'Image dst with Points')
     plt.axis('off')
