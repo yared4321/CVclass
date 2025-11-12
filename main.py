@@ -65,7 +65,7 @@ def main():
     plt.figure()
     forward_panorama_slow_plot = plt.imshow(transformed_image)
     plt.title('Forward Homography Slow implementation')
-    plt.show()
+    # #plt.show()
 
     # Plot naive homography with forward mapping, fast implementation
     tt = time.time()
@@ -78,7 +78,7 @@ def main():
     plt.figure()
     forward_panorama_fast_plot = plt.imshow(transformed_image_fast)
     plt.title('Forward Homography Fast implementation')
-    plt.show()
+    #plt.show()
 
     # # loading data with imperfect matches
     src_img, dst_img, match_p_src, match_p_dst = load_data(False)
@@ -103,7 +103,7 @@ def main():
     plt.figure()
     forward_panorama_imperfect_matches_plot = plt.imshow(transformed_image_fast)
     plt.title('Forward Panorama imperfect matches')
-    plt.show()
+    #plt.show()
 
     # Test naive homography
     tt = time.time()
@@ -132,12 +132,12 @@ def main():
     plt.figure()
     ransac_plot = plt.imshow(ransac_image_fast)
     plt.title('RANSAC Homography')
-    plt.show()
+    #plt.show()
 
     plt.figure()
     forward_panorama_imperfect_matches_plot = plt.imshow(transformed_image_fast)
     plt.title('RANSAC Homography - Fast Computation')
-    plt.show()
+    #plt.show()
 
     # Test RANSAC homography
     tt = tic()
@@ -160,7 +160,7 @@ def main():
 
     student_backward_warp_img = plt.imshow(img.astype(np.uint8))
     plt.title('Backward warp example')
-    plt.show()
+    #plt.show()
 
     # Build panorama
     tt = tic()
