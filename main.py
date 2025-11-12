@@ -9,7 +9,6 @@ from matplotlib.patches import Circle
 
 from ex1_student_solution import Solution
 
-
 ##########################################################
 # Don't forget to fill in your IDs!!!
 # students' IDs:
@@ -185,7 +184,7 @@ def your_images_loader():
     src_img_test = mpimg.imread('src_test.jpg')
     dst_img_test = mpimg.imread('dst_test.jpg')
 
-    DECIMATION_FACTOR = 5.0
+    DECIMATION_FACTOR = 1.0
     src_img_test = resize(src_img_test,
                           dsize=(int(src_img_test.shape[1]/DECIMATION_FACTOR),
                                  int(src_img_test.shape[0]/DECIMATION_FACTOR)),
@@ -305,10 +304,29 @@ def your_images_loader():
 #     plt.title(f'Image dst with Points')
 #     plt.axis('off')
 #     plt.show()
+    
 
-#     print("END\n\n\n\n")
+    print("END\n\n\n\n")
 
 if __name__ == '__main__':
     # preparatory_steps()
-    main()
+    # main()
+    solution = Solution()
+    inliers_percent = 0.8
+    max_err = 25
+    src_img_test, dst_img_test, match_p_src, match_p_dst= your_images_loader()
+    tt = tic()
+    img_pan = solution.panorama(src_img_test,
+                                dst_img_test,
+                                match_p_src,
+                                match_p_dst,
+                                inliers_percent,
+                                max_err)
+    print('Panorama {:5.4f} sec'.format(toc(tt)))
+
+    # Course panorama
+    plt.figure()
+    course_panorama_plot = plt.imshow(img_pan)
+    plt.title('My Panorama')
+    plt.show()
     # your_images_main()
