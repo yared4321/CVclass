@@ -1,18 +1,29 @@
 """Projective Homography and Panorama Solution."""
 import numpy as np
+from numpy.linalg import svd
 
+import matplotlib.image as mpimg
+import matplotlib.pyplot as plt
+
+import time
 from typing import Tuple
 from random import sample
 from collections import namedtuple
+from cv2 import resize, INTER_CUBIC
 
-
-from numpy.linalg import svd
+import scipy
 from scipy.interpolate import griddata
 
 
 PadStruct = namedtuple('PadStruct',
                        ['pad_up', 'pad_down', 'pad_right', 'pad_left'])
 
+def tic():
+    return time.time()
+
+
+def toc(t):
+    return float(tic()) - float(t)
 
 class Solution:
     """Implement Projective Homography and Panorama Solution."""
@@ -304,67 +315,6 @@ class Solution:
 
         return output_homography
     
-    # @staticmethod
-    # def compute_backward_mapping(
-    #         backward_projective_homography: np.ndarray,
-    #         src_image: np.ndarray,
-    #         dst_image_shape: tuple = (1088, 1452, 3)) -> np.ndarray:
-    #     """Compute backward mapping.
-
-    #     (1) Create a mesh-grid of columns and rows of the destination image.
-    #     (2) Create a set of homogenous coordinates for the destination image
-    #     using the mesh-grid from (1).
-    #     (3) Compute the corresponding coordinates in the source image using
-    #     the backward projective homography.
-    #     (4) Create the mesh-grid of source image coordinates.
-    #     (5) For each color channel (RGB): Use scipy's interpolation.griddata
-    #     with an appropriate configuration to compute the bi-cubic
-    #     interpolation of the projected coordinates.
-
-    #     Args:
-    #         backward_projective_homography: 3x3 Projective Homography matrix.
-    #         src_image: HxWx3 source image.
-    #         dst_image_shape: tuple of length 3 indicating the destination shape.
-
-    #     Returns:
-    #         The source image backward warped to the destination coordinates.
-    #     """
-
-    #     # return backward_warp
-    #     """INSERT YOUR CODE HERE"""
-    #     # Placeholder
-    #     backward_warp = np.zeros(shape=dst_image_shape)
-    #     intermediate = np.zeros(shape=src_image.shape)
-
-    #     # Create a meshgrid and reshape to a vector with a third row of 1's:
-    #     xx, yy = np.meshgrid(range(dst_image_shape[1]), range(dst_image_shape[0]))
-    #     combined = np.stack((xx, yy, np.ones(dst_image_shape[:2])))
-    #     combined = combined.reshape((3, -1))
-
-    #     # Transform all points using homography:
-    #     coord = np.matmul(backward_projective_homography, combined)
-
-    #     coord = (coord / coord[2])[:2, :]
-    #     # coord2 = coord.astype(int)
-    #     copy_data = np.append(coord, combined[:2, :], axis=0)
-
-    #     # Note that x,y in camera coordinates is different from numpy axes!
-    #     # Filter out all pixels outside of source coordinate range.
-    #     # Cropped the outer ring so that bilinear can be calculated!
-
-    #     dropout = copy_data.min(axis=0) >= 0
-    #     copy_data = copy_data[:, dropout]
-    #     dropout = copy_data[0, :] < src_image.shape[1]
-    #     copy_data = copy_data[:, dropout]
-    #     dropout = copy_data[1, :] < src_image.shape[0]
-    #     copy_data = copy_data[:, dropout]
-
-    #     indices = np.floor(copy_data[0:2, :]).astype(int)
-    #     values = src_image[indices[1, :], indices[0, :], :]
-    #     backward_warp = griddata(copy_data[2:, :].transpose(), values, (xx, yy))
-
-    #     return np.round(backward_warp).astype(int)
-
     @staticmethod
     def compute_backward_mapping(
             backward_projective_homography: np.ndarray,
@@ -441,74 +391,7 @@ class Solution:
         backward_warp = np.round(backward_warp_float).astype(np.uint8) # Use uint8 for image data
 
         return backward_warp
-    # @staticmethod
-    # def compute_backward_mapping(
-    #         backward_projective_homography: np.ndarray,
-    #         src_image: np.ndarray,
-    #         dst_image_shape: tuple = (1088, 1452, 3)) -> np.ndarray:
-    #     """Compute backward mapping.
 
-    #     (1) Create a mesh-grid of columns and rows of the destination image.
-    #     (2) Create a set of homogenous coordinates for the destination image
-    #     using the mesh-grid from (1).
-    #     (3) Compute the corresponding coordinates in the source image using
-    #     the backward projective homography.
-    #     (4) Create the mesh-grid of source image coordinates.
-    #     (5) For each color channel (RGB): Use scipy's interpolation.griddata
-    #     with an appropriate configuration to compute the bi-cubic
-    #     interpolation of the projected coordinates.
-
-    #     Args:
-    #         backward_projective_homography: 3x3 Projective Homography matrix.
-    #         src_image: HxWx3 source image.
-    #         dst_image_shape: tuple of length 3 indicating the destination shape.
-
-    #     Returns:
-    #         The source image backward warped to the destination coordinates.
-    #     """
-    #     dst_H = dst_image_shape[0]
-    #     dst_W = dst_image_shape[1]
-    #     src_H = src_image.shape[0]
-    #     src_W = src_image.shape[1]
-
-    #     # mesh 
-    #     #dst
-    #     x = np.arange(dst_W)
-    #     y = np.arange(dst_H)
-    #     xv, yv = np.meshgrid(x, y)
-    #     xv_flat = xv.flatten()
-    #     yv_flat = yv.flatten()
-    #     ones = np.ones_like(xv_flat)
-        
-    #     #src
-    #     src_y_grid, src_x_grid = np.indices(src_image.shape[:2])
-    #     src_rows, src_cols = np.meshgrid(range(src_image.shape[0]), range(src_image.shape[1]))
-    #     points_to_sample_from = (src_x_grid.flatten(), src_y_grid.flatten())
-
-    #     # return backward_warp
-    #     """INSERT YOUR CODE HERE"""
-    #     backward_projective_homography = np.linalg.inv(backward_projective_homography)
-    #     #matrix multipication
-    #     dst_coordinates = np.vstack([xv_flat, yv_flat, ones])  # shape: 3 x (H*W)
-    #     src_coordinates = backward_projective_homography @ dst_coordinates
-    #     src_coordinates[:2, :] /= src_coordinates[2,:]
-
-    #     src_x_map = src_coordinates[0, :]
-    #     src_y_map = src_coordinates[1, :]
-
-    #     backward_warp = np.zeros(dst_image_shape, dtype=np.uint8)
-
-    #     for channel_num in range(src_image.shape[2]):
-    #         channel_data = src_image[:, :, channel_num].flatten()
-    #         warped_channel = griddata(  points_to_sample_from,
-    #                                     channel_data,
-    #                                     (src_x_map, src_y_map),
-    #                                     method='cubic',
-    #                                     fill_value=0
-    #                                   )
-    #         backward_warp[:, :, channel_num] = warped_channel.reshape(dst_H, dst_W)
-
-    #     return backward_warp
 
     @staticmethod
     def find_panorama_shape(src_image: np.ndarray,
@@ -726,4 +609,53 @@ class Solution:
         #   (7) Don't forget to clip the values of the image to [0, 255].
         
         return np.clip(img_panorama, 0, 255).astype(np.uint8)    
-        
+            
+    @staticmethod
+    def your_images_loader():
+        src_img_test = mpimg.imread('src_test.jpg')
+        dst_img_test = mpimg.imread('dst_test.jpg')
+
+        DECIMATION_FACTOR = 1.0
+        src_img_test = resize(src_img_test,
+                            dsize=(int(src_img_test.shape[1]/DECIMATION_FACTOR),
+                                    int(src_img_test.shape[0]/DECIMATION_FACTOR)),
+                            interpolation=INTER_CUBIC)
+        dst_img_test = resize(dst_img_test,
+                            dsize=(int(dst_img_test.shape[1]/DECIMATION_FACTOR),
+                                    int(dst_img_test.shape[0]/DECIMATION_FACTOR)),
+                            interpolation=INTER_CUBIC)
+
+        matches_test = scipy.io.loadmat('matches_test')
+
+        match_p_dst = matches_test['match_p_dst'].astype(float)
+        match_p_src = matches_test['match_p_src'].astype(float)
+
+        match_p_dst /= DECIMATION_FACTOR
+        match_p_src /= DECIMATION_FACTOR
+        return src_img_test, dst_img_test, match_p_src, match_p_dst
+
+    def my_panorama(self):
+        inliers_percent = 0.8
+        max_err = 25
+        src_img_test, dst_img_test, match_p_src, match_p_dst= self.your_images_loader()
+        tt = tic()
+        img_pan = self.panorama(src_img_test,
+                                    dst_img_test,
+                                    match_p_src,
+                                    match_p_dst,
+                                    inliers_percent,
+                                    max_err)
+        print('Panorama {:5.4f} sec'.format(toc(tt)))
+
+        # Course panorama
+        plt.figure()
+        course_panorama_plot = plt.imshow(img_pan)
+        plt.title('My Panorama')
+        plt.show()
+
+        pass
+
+if __name__ == "__main__":
+
+    solution = Solution()
+    solution.my_panorama()
