@@ -569,10 +569,10 @@ class Solution:
                 # pad down
                 pad_down = max([pad_down,
                                 corner_location[1] - dst_rows_num])
-        # pad_up = int(np.ceil(pad_up))
-        # pad_down = int(np.ceil(pad_down))
-        # pad_left = int(np.ceil(pad_left))
-        # pad_right = int(np.ceil(pad_right))  
+        pad_up = int(np.ceil(pad_up))
+        pad_down = int(np.ceil(pad_down))
+        pad_left = int(np.ceil(pad_left))
+        pad_right = int(np.ceil(pad_right))  
 
         panorama_cols_num = int(dst_cols_num + pad_right + pad_left)
         panorama_rows_num = int(dst_rows_num + pad_up + pad_down)
