@@ -33,6 +33,21 @@ class Solution:
                                 num_of_cols,
                                 len(disparity_values)))
         """INSERT YOUR CODE HERE"""
+        padded_right_image = np.pad(right_image, pad_width=((0, 0),
+                                                            (dsp_range, dsp_range),
+                                                            (0, 0)), mode='constant')
+        for d in disparity_values:
+            dispared_right_img = padded_right_image[:, d + dsp_range:np.shape(padded_right_image)[1] - (dsp_range - d), :]
+            squared_diff = (left_image - dispared_right_img) ** 2
+            pad_squared_diff = np.pad(squared_diff, ((1, 1), (1, 1), (0, 0)), mode='constant')
+            # Sliding windows
+            windows = np.lib.stride_tricks.sliding_window_view(pad_squared_diff,
+                                                               (win_size, win_size, 1),
+                                                               axis=(0, 1, 2))
+            ssd_per_disparity = windows.sum(axis=(-1, -2, -3, -4))
+            ssdd_tensor[:, :, d + dsp_range] = ssd_per_disparity
+
+
         ssdd_tensor -= ssdd_tensor.min()
         ssdd_tensor /= ssdd_tensor.max()
         ssdd_tensor *= 255.0
@@ -55,8 +70,9 @@ class Solution:
             Naive labels HxW matrix.
         """
         # you can erase the label_no_smooth initialization.
-        label_no_smooth = np.zeros((ssdd_tensor.shape[0], ssdd_tensor.shape[1]),dtype=int)
+        label_no_smooth = np.zeros((ssdd_tensor.shape[0], ssdd_tensor.shape[1]), dtype=int)
         """INSERT YOUR CODE HERE"""
+        label_no_smooth = np.argmin(ssdd_tensor, axis=2)
         return label_no_smooth
 
     @staticmethod
