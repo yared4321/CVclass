@@ -94,6 +94,34 @@ class Solution:
         num_labels, num_of_cols = c_slice.shape[0], c_slice.shape[1]
         l_slice = np.zeros((num_labels, num_of_cols))
         """INSERT YOUR CODE HERE"""
+        l_slice[:, 0] = c_slice[:, 0]
+
+        for col in range(1, num_of_cols):
+            prev_col = l_slice[:, col - 1]
+
+            # p1 penalty (±1 disparities), without wrap-around
+            p1_cost = np.full(num_labels, np.inf)
+            if num_labels > 1:
+                p1_cost[1:] = prev_col[:-1]  # L[d-1]
+                p1_cost[:-1] = np.minimum(p1_cost[:-1], prev_col[1:])  # L[d+1]
+            p1_cost = p1 + p1_cost
+
+            # p2 penalty (|k| >= 2 disparities)
+            prefix = np.minimum.accumulate(prev_col)
+            suffix = np.minimum.accumulate(prev_col[::-1])[::-1]
+            p2_cost = np.zeros(num_labels)
+
+            for d in range(num_labels):
+                left_min = prefix[d - 2] if d - 2 >= 0 else np.inf
+                right_min = suffix[d + 2] if d + 2 < num_labels else np.inf
+                p2_cost[d] = p2 + min(left_min, right_min)
+
+            # choose best route for each d
+            M = np.minimum.reduce([prev_col, p1_cost, p2_cost])
+
+            # recurrence
+            l_slice[:, col] = c_slice[:, col] + M - np.min(prev_col)
+
         return l_slice
 
     def dp_labeling(self,
@@ -119,6 +147,12 @@ class Solution:
         """
         l = np.zeros_like(ssdd_tensor)
         """INSERT YOUR CODE HERE"""
+
+        num_of_rows = ssdd_tensor.shape[0]
+        for row in range(num_of_rows):
+            hor_slice = ssdd_tensor[row, :, :].transpose()
+            l[row, :, :] = self.dp_grade_slice(hor_slice, p1, p2).transpose()
+
         return self.naive_labeling(l)
 
     def dp_labeling_per_direction(self,
