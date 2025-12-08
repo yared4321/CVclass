@@ -55,7 +55,7 @@ class Solution:
             Naive labels HxW matrix.
         """
         # you can erase the label_no_smooth initialization.
-        label_no_smooth = np.zeros((ssdd_tensor.shape[0], ssdd_tensor.shape[1]))
+        label_no_smooth = np.zeros((ssdd_tensor.shape[0], ssdd_tensor.shape[1]),dtype=int)
         """INSERT YOUR CODE HERE"""
         return label_no_smooth
 
