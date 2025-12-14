@@ -2,6 +2,8 @@
 import numpy as np
 from scipy.signal import convolve2d
 from matplotlib import pyplot as plt
+import matplotlib.image as mpimg
+import cv2 
 
 class Solution:
     def __init__(self):
@@ -187,6 +189,24 @@ class Solution:
         l = np.zeros_like(ssdd_tensor)
         direction_to_slice = {}
         """INSERT YOUR CODE HERE"""
+        H, W, D = ssdd_tensor.shape
+        directions = range(1, num_of_directions+1)
+
+        for _direction in directions:
+            slices = self.extract_direction_slices(ssdd_tensor, _direction)
+            
+            # ניצור רשימה עבור תוצאות ה-DP של כל slice
+            L_slices = []
+
+            for path_slice in slices:
+                # path_slice יכול להיות בגודל קצר יותר, DP צריך להתמודד עם זה
+                L_result = self.dp_grade_slice(path_slice, p1, p2)
+                L_slices.append(L_result)
+
+            # מחזירים למבנה המקורי
+            direction_to_slice[_direction] =self.naive_labeling( self.paths_to_ssdd_naive(L_slices, direction=_direction, original_shape=(H, W, D)) )
+
+            # check_tensor= self.naive_labeling(L_tensors[idx])
 
 
         return direction_to_slice
@@ -419,3 +439,19 @@ class Solution:
             raise ValueError("Direction must be 1..8")
 
         return result
+    
+
+    def rectify_image(self,image_path,new_dimensions = (384,288)):
+        im = cv2.imread(image_path)
+        resized_img = cv2.resize(im, new_dimensions, interpolation=cv2.INTER_CUBIC)
+        resized_img_path = image_path.split('.')[0]+'_resized.'+image_path.split('.')[-1]
+        cv2.imwrite(resized_img_path, resized_img)
+        
+        return
+
+
+# if __name__ == "__main__":
+
+#     sol = Solution()
+#     sol.rectify_image('my_image_left.png')
+#     sol.rectify_image('my_image_right.png')
