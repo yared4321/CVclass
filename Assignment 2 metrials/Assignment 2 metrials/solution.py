@@ -1,7 +1,7 @@
 """Stereo matching."""
 import numpy as np
 from scipy.signal import convolve2d
-
+from matplotlib import pyplot as plt
 
 class Solution:
     def __init__(self):
@@ -187,6 +187,8 @@ class Solution:
         l = np.zeros_like(ssdd_tensor)
         direction_to_slice = {}
         """INSERT YOUR CODE HERE"""
+
+
         return direction_to_slice
 
     def sgm_labeling(self, ssdd_tensor: np.ndarray, p1: float, p2: float):
@@ -214,4 +216,206 @@ class Solution:
         num_of_directions = 8
         l = np.zeros_like(ssdd_tensor)
         """INSERT YOUR CODE HERE"""
-        return self.naive_labeling(l)
+        H, W, D = ssdd_tensor.shape
+        directions = range(1, 9)
+        L_tensors = np.zeros((8, H, W, D))
+        
+        for idx, _direction in enumerate(directions):
+            slices = self.extract_direction_slices(ssdd_tensor, _direction)
+            
+            # ניצור רשימה עבור תוצאות ה-DP של כל slice
+            L_slices = []
+
+            for path_slice in slices:
+                # path_slice יכול להיות בגודל קצר יותר, DP צריך להתמודד עם זה
+                L_result = self.dp_grade_slice(path_slice, p1, p2)
+                L_slices.append(L_result)
+
+            # מחזירים למבנה המקורי
+            L_tensors[idx] = self.paths_to_ssdd_naive(L_slices, direction=_direction, original_shape=(H, W, D))
+
+            # check_tensor= self.naive_labeling(L_tensors[idx])
+
+            # print(_direction)
+            # plt.figure()
+            # plt.imshow(check_tensor)
+            # plt.show()
+
+        # ממוצע של כל 8 הכיוונים
+        L_avg = np.mean(L_tensors, axis=0)
+
+        return self.naive_labeling(L_avg)
+
+
+
+
+    def extract_direction_slices(self, ssdd, direction):
+        """
+        Extract slices from SSDD for 8 directions (45° increments) in DP-ready format.
+        Each slice is np.ndarray of shape (D, length).
+
+        Directions mapping:
+            1: →  left → right
+            2: ↘  main diagonal TL→BR  (was 4)
+            3: ↓  vertical top → bottom
+            4: ↙  reversed anti-diagonal BL→TR  (was 6)
+            5: ←  right → left
+            6: ↖  reversed main diagonal BR→TL  (was 8)
+            7: ↑  vertical bottom → top
+            8: ↗  anti-diagonal TR→BL  (was 2)
+        """
+
+        H, W, D = ssdd.shape
+        slices = []
+
+        if direction == 1:  # horizontal left→right
+            for i in range(H):
+                path = ssdd[i, :, :].transpose(1, 0)  # (D, W)
+                slices.append(path)
+
+        elif direction == 2:  # main diagonal TL→BR
+            for offset in range(-(H-1), W):
+                diag = np.array([ssdd[i, i+offset, :] for i in range(max(0, -offset), min(H, W-offset))])
+                if diag.size > 0:
+                    slices.append(diag.transpose(1, 0))  # (D, length)
+
+        elif direction == 3:  # vertical top→bottom
+            for j in range(W):
+                path = ssdd[:, j, :].transpose(1, 0)  # (D, H)
+                slices.append(path)
+
+        elif direction == 4:  # reversed anti-diagonal BL→TR
+            for s in range(H + W - 1):
+                diag = np.array([ssdd[i, s-i, :] for i in range(min(H-1, s), max(-1, s-W), -1)])
+                if diag.size > 0:
+                    slices.append(diag.transpose(1, 0))
+
+        elif direction == 5:  # horizontal right→left
+            for i in range(H):
+                path = ssdd[i, ::-1, :].transpose(1, 0)  # (D, W)
+                slices.append(path)
+
+        elif direction == 6:  # reversed main diagonal BR→TL
+            for offset in range(-(H-1), W):
+                diag = np.array([ssdd[i, i+offset, :] for i in range(min(H-1, W-1-offset), max(-1, -offset-1), -1)])
+                if diag.size > 0:
+                    slices.append(diag.transpose(1, 0))
+
+        elif direction == 7:  # vertical bottom→top
+            for j in range(W):
+                path = ssdd[::-1, j, :].transpose(1, 0)
+                slices.append(path)
+
+        elif direction == 8:  # anti-diagonal TR→BL
+            for s in range(H + W - 1):
+                diag = np.array([ssdd[i, s-i, :] for i in range(max(0, s-W+1), min(H, s+1))])
+                if diag.size > 0:
+                    slices.append(diag.transpose(1, 0))
+
+        else:
+            raise ValueError("Direction must be 1..8")
+
+        return slices
+
+    def paths_to_ssdd_naive(self, slices, direction, original_shape):
+        """
+        Reconstructs the 3D cost tensor from a list of 2D cost slices
+        (D, length) after Dynamic Programming aggregation.
+        """
+        H, W, D = original_shape
+        result = np.zeros((H, W, D))
+
+        def place(i, j, vec):
+            """Helper to place a D-vector at (i, j)"""
+            # Note: slices are transposed to (D, length) in extract, 
+            # but the DP output is usually (length, D) if the DP input was (length, D).
+            # Assuming sl[k, :] is the D-vector for pixel k along the path.
+            result[i, j, :] = vec
+
+        if direction == 1:  # horizontal L→R: ssdd[i, :, :] -> slices along i
+            # i is slice index, k is path index (j)
+            for i, sl in enumerate(slices):
+                for k in range(sl.shape[1]):
+                    place(i, k, sl[:, k])
+
+        elif direction == 5:  # horizontal R→L: ssdd[i, ::-1, :] -> slices along i
+            # i is slice index, k is path index (W - 1 - j)
+            for i, sl in enumerate(slices):
+                for k in range(sl.shape[1]):
+                    place(i, W - 1 - k, sl[:, k])
+
+        elif direction == 3:  # vertical T→B: ssdd[:, j, :] -> slices along j
+            # j is slice index, k is path index (i)
+            for j, sl in enumerate(slices):
+                for k in range(sl.shape[1]):
+                    place(k, j, sl[:, k])
+
+        elif direction == 7:  # vertical B→T: ssdd[::-1, j, :] -> slices along j
+            # j is slice index, k is path index (H - 1 - i)
+            for j, sl in enumerate(slices):
+                for k in range(sl.shape[1]):
+                    place(H - 1 - k, j, sl[:, k])
+
+        # --- Diagonal Directions ---
+
+        elif direction == 2:  # main diagonal TL→BR: i and j both increase
+            # offset = j - i, offset ranges from -(H-1) to W-1
+            # idx runs from 0 to W+H-2
+            for idx, sl in enumerate(slices):
+                offset = idx - (H - 1)
+                # Starting point (k=0) is the one closest to (0, 0) for this offset
+                i_start = max(0, -offset)
+                j_start = max(0, offset)
+                
+                for k in range(sl.shape[1]):
+                    i = i_start + k
+                    j = j_start + k
+                    place(i, j, sl[:, k])
+
+        elif direction == 6:  # reversed main diagonal BR→TL: i and j both decrease
+            # Same offsets as D2, but path is reversed (from BR to TL)
+            for idx, sl in enumerate(slices):
+                offset = idx - (H - 1)
+                
+                # Starting point (k=0) is the one closest to (H-1, W-1) for this offset
+                i_start = min(H - 1, W - 1 - offset)
+                j_start = min(W - 1, H - 1 + offset)
+                
+                for k in range(sl.shape[1]):
+                    # Path indices decrease from start
+                    i = i_start - k
+                    j = j_start - k
+                    place(i, j, sl[:, k])
+
+        elif direction == 4:  # reversed anti-diagonal BL→TR: i decreases, j increases
+            # s = i + j, s ranges from 0 to H+W-2 (same as idx)
+            for s, sl in enumerate(slices):
+                # The path in extract (D4) starts at the highest i (BL side) and decreases i
+                # Starting point (k=0) for this sum 's'
+                i_start = min(H - 1, s)
+                j_start = s - i_start
+                
+                for k in range(sl.shape[1]):
+                    # Path indices follow the slice generation (i decreases, j increases)
+                    i = i_start - k
+                    j = j_start + k
+                    place(i, j, sl[:, k])
+
+        elif direction == 8:  # anti-diagonal TR→BL: i increases, j decreases
+            # s = i + j, s ranges from 0 to H+W-2
+            for s, sl in enumerate(slices):
+                # The path in extract (D8) starts at the lowest i (TR side) and increases i
+                # Starting point (k=0) for this sum 's'
+                i_start = max(0, s - W + 1)
+                j_start = s - i_start
+                
+                for k in range(sl.shape[1]):
+                    # Path indices follow the slice generation (i increases, j decreases)
+                    i = i_start + k
+                    j = j_start - k
+                    place(i, j, sl[:, k])
+
+        else:
+            raise ValueError("Direction must be 1..8")
+
+        return result

@@ -28,7 +28,8 @@ def toc(t):
 
 def forward_map(left_image, labels):
     labels -= DISPARITY_RANGE
-    mapped = np.zeros_like(left_image)
+    mapped = np.zeros_like(left_image,dtype=left_image.dtype)
+    
     for row in range(left_image.shape[0]):
         cols = range(left_image.shape[1])
         mapped[row,
@@ -114,18 +115,18 @@ def main():
           f"[seconds]")
 
     # Plot all directions as well as the image, in the center of the plot:
-    plt.figure()
-    for i in range(1, 1 + 9):
-        plt.subplot(3, 3, i)
-        if i < 5:
-            plt.imshow(direction_to_vote[i])
-            plt.title(f'Direction {i}')
-        elif i == 5:
-            plt.imshow(left_image)
-            plt.title(f'Left Image')
-        else:
-            plt.imshow(direction_to_vote[i - 1])
-            plt.title(f'Direction {i - 1}')
+    # plt.figure()
+    # for i in range(1, 1 + 9):
+    #     plt.subplot(3, 3, i)
+    #     if i < 5:
+    #         plt.imshow(direction_to_vote[i])
+    #         plt.title(f'Direction {i}')
+    #     elif i == 5:
+    #         plt.imshow(left_image)
+    #         plt.title(f'Left Image')
+    #     else:
+    #         plt.imshow(direction_to_vote[i - 1])
+    #         plt.title(f'Direction {i - 1}')
 
     # Smooth disparity image - Semi-Global Mapping
     tt = tic()
@@ -154,7 +155,7 @@ def main():
     plt.subplot(1, 3, 3)
     plt.imshow(right_image)
     plt.title('Right Image')
-
+    plt.show()
     ###########################################################################
     ########################### YOUR IMAGE PLAYGROUND #########################
     ###########################################################################
@@ -167,60 +168,60 @@ def main():
     solution = Solution()
     # Compute Sum-Square-Diff distance
     tt = tic()
-    your_ssdd = solution.ssd_distance(your_left_image.astype(np.float64),
-                                      your_right_image.astype(np.float64),
-                                      win_size=WIN_SIZE,
-                                      dsp_range=DISPARITY_RANGE)
-    print(f"SSDD calculation on your image took: {toc(tt):.4f}[seconds]")
+    # your_ssdd = solution.ssd_distance(your_left_image.astype(np.float64),
+    #                                   your_right_image.astype(np.float64),
+    #                                   win_size=WIN_SIZE,
+    #                                   dsp_range=DISPARITY_RANGE)
+    # print(f"SSDD calculation on your image took: {toc(tt):.4f}[seconds]")
 
-    # plot all directions as well as the image, in the center of the plot
-    tt = tic()
-    your_direction_to_vote = solution.dp_labeling_per_direction(your_ssdd,
-                                                                COST1,
-                                                                COST2)
-    print(f"Dynamic programming in all directions took: {toc(tt):.4f}[seconds]")
-    # Plot all directions as well as the image, in the center of the plot:
-    plt.figure()
-    for i in range(1, 1 + 9):
-        plt.subplot(3, 3, i)
-        if i < 5:
-            plt.imshow(your_direction_to_vote[i])
-            plt.title(f'Direction {i}')
-        elif i == 5:
-            plt.imshow(your_left_image)
-            plt.title(f'Your Left Image')
-        else:
-            plt.imshow(your_direction_to_vote[i - 1])
-            plt.title(f'Direction {i - 1}')
+    # # plot all directions as well as the image, in the center of the plot
+    # tt = tic()
+    # your_direction_to_vote = solution.dp_labeling_per_direction(your_ssdd,
+    #                                                             COST1,
+    #                                                             COST2)
+    # print(f"Dynamic programming in all directions took: {toc(tt):.4f}[seconds]")
+    # # Plot all directions as well as the image, in the center of the plot:
+    # plt.figure()
+    # for i in range(1, 1 + 9):
+    #     plt.subplot(3, 3, i)
+    #     if i < 5:
+    #         plt.imshow(your_direction_to_vote[i])
+    #         plt.title(f'Direction {i}')
+    #     elif i == 5:
+    #         plt.imshow(your_left_image)
+    #         plt.title(f'Your Left Image')
+    #     else:
+    #         plt.imshow(your_direction_to_vote[i - 1])
+    #         plt.title(f'Direction {i - 1}')
 
-    # Smooth disparity image - Semi-Global Mapping
-    tt = tic()
-    your_label_smooth_sgm = solution.sgm_labeling(your_ssdd, COST1, COST2)
-    print(f"SGM on your image done in {toc(tt):.4f}[seconds]")
-    plt.figure()
-    plt.subplot(1, 2, 1)
-    plt.imshow(your_left_image)
-    plt.title('Your Source Image')
-    plt.subplot(1, 2, 2)
-    plt.imshow(your_label_smooth_sgm)
-    plt.colorbar()
-    plt.title('Your Smooth Depth - SGM')
+    # # Smooth disparity image - Semi-Global Mapping
+    # tt = tic()
+    # your_label_smooth_sgm = solution.sgm_labeling(your_ssdd, COST1, COST2)
+    # print(f"SGM on your image done in {toc(tt):.4f}[seconds]")
+    # plt.figure()
+    # plt.subplot(1, 2, 1)
+    # plt.imshow(your_left_image)
+    # plt.title('Your Source Image')
+    # plt.subplot(1, 2, 2)
+    # plt.imshow(your_label_smooth_sgm)
+    # plt.colorbar()
+    # plt.title('Your Smooth Depth - SGM')
 
-    # Plot the forward map based on the Semi-Global Mapping result:
-    your_mapped_image_smooth_sgm = forward_map(your_left_image,
-                                               labels=your_label_smooth_sgm)
-    plt.figure()
-    plt.subplot(1, 3, 1)
-    plt.imshow(your_left_image)
-    plt.title('Your Source Image')
-    plt.subplot(1, 3, 2)
-    plt.imshow(your_mapped_image_smooth_sgm)
-    plt.title('Your Smooth Forward map - SGM')
-    plt.subplot(1, 3, 3)
-    plt.imshow(your_right_image)
-    plt.title('Your Right Image')
+    # # Plot the forward map based on the Semi-Global Mapping result:
+    # your_mapped_image_smooth_sgm = forward_map(your_left_image,
+    #                                            labels=your_label_smooth_sgm)
+    # plt.figure()
+    # plt.subplot(1, 3, 1)
+    # plt.imshow(your_left_image)
+    # plt.title('Your Source Image')
+    # plt.subplot(1, 3, 2)
+    # plt.imshow(your_mapped_image_smooth_sgm)
+    # plt.title('Your Smooth Forward map - SGM')
+    # plt.subplot(1, 3, 3)
+    # plt.imshow(your_right_image)
+    # plt.title('Your Right Image')
 
-    plt.show()
+    # plt.show()
 
 
 if __name__ == "__main__":
