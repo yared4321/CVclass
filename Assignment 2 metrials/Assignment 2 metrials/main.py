@@ -5,7 +5,6 @@ import matplotlib.image as mpimg
 
 from solution import Solution
 
-
 COST1 = 0.5
 COST2 = 3.0
 WIN_SIZE = 3
@@ -15,6 +14,8 @@ DISPARITY_RANGE = 20
 # students' IDs:
 ID1 = '311243687'
 ID2 = '203664743'
+
+
 ##########################################################
 
 
@@ -28,13 +29,12 @@ def toc(t):
 
 def forward_map(left_image, labels):
     labels -= DISPARITY_RANGE
-    mapped = np.zeros_like(left_image,dtype=left_image.dtype)
-    
+    mapped = np.zeros_like(left_image)
     for row in range(left_image.shape[0]):
         cols = range(left_image.shape[1])
         mapped[row,
-               np.clip(cols - labels[row, ...], 0, left_image.shape[1] - 1),
-               ...] = left_image[row, cols, ...]
+        np.clip(cols - labels[row, ...], 0, left_image.shape[1] - 1),
+        ...] = left_image[row, cols, ...]
     return mapped
 
 
@@ -54,7 +54,7 @@ def main():
     COST2 = 3.0
     WIN_SIZE = 3
     DISPARITY_RANGE = 20
-    
+
     left_image, right_image = load_data()
     solution = Solution()
     # Compute Sum-Square-Diff distance
@@ -133,7 +133,7 @@ def main():
     label_smooth_sgm = solution.sgm_labeling(ssdd, COST1, COST2)
     print(f"SGM done in {toc(tt):.4f}[seconds]")
 
-    # # Plot Semi-Global Mapping result:
+    # Plot Semi-Global Mapping result:
     plt.figure()
     plt.subplot(1, 2, 1)
     plt.imshow(left_image)
@@ -155,14 +155,14 @@ def main():
     plt.subplot(1, 3, 3)
     plt.imshow(right_image)
     plt.title('Right Image')
-    plt.show()
+
     ###########################################################################
     ########################### YOUR IMAGE PLAYGROUND #########################
     ###########################################################################
-    COST1 = 0.5           # YOU MAY CHANGE THIS
-    COST2 = 3.0           # YOU MAY CHANGE THIS
-    WIN_SIZE = 3          # YOU MAY CHANGE THIS
-    DISPARITY_RANGE = 20  # YOU MAY CHANGE THIS
+    COST1 = 2  # YOU MAY CHANGE THIS
+    COST2 = 16  # YOU MAY CHANGE THIS
+    WIN_SIZE = 3  # YOU MAY CHANGE THIS
+    DISPARITY_RANGE = 48  # YOU MAY CHANGE THIS
 
     your_left_image, your_right_image = load_data(is_your_data=True)
     solution = Solution()
@@ -193,7 +193,6 @@ def main():
         else:
             plt.imshow(your_direction_to_vote[i - 1])
             plt.title(f'Direction {i - 1}')
-    plt.show()
 
     # Smooth disparity image - Semi-Global Mapping
     tt = tic()
