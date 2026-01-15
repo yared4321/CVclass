@@ -61,12 +61,15 @@ class Trainer:
 
         for batch_idx, (inputs, targets) in enumerate(train_dataloader):
             """INSERT YOUR CODE HERE."""
+            targets = targets.to(device)
+            inputs = inputs.to(device)
+
+            self.optimizer.zero_grad()
             output = self.model(inputs)
             loss = self.criterion(output, targets)
             # backpropagation
             loss.backward()
             self.optimizer.step()
-            self.optimizer.zero_grad()
             # update loss
             total_loss += loss.item()
             avg_loss = total_loss / (batch_idx + 1)
@@ -108,16 +111,18 @@ class Trainer:
 
         for batch_idx, (inputs, targets) in enumerate(dataloader):
             """INSERT YOUR CODE HERE."""
+            targets = targets.to(device)
+            inputs = inputs.to(device)
             # forward pass
             with torch.no_grad():
                 output = self.model(inputs)
             loss = self.criterion(output, targets)
             # update loss
-            total_loss += loss.item()
-            avg_loss = total_loss / (batch_idx + 1)
+            total_loss = total_loss + loss
+            avg_loss = total_loss.item() / (batch_idx + 1)
             # update accuracy
-            _, predicted_labels = torch.max(output, 1)
-            correct_labeled_samples += (predicted_labels == targets).sum().item()
+            preds = output.argmax(dim=1)
+            correct_labeled_samples += (preds == targets).sum().item()
             nof_samples += targets.size(0)
             accuracy = 100.0 * correct_labeled_samples / nof_samples
 
