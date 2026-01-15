@@ -52,7 +52,31 @@ def get_grad_cam_visualization(test_dataset: torch.utils.data.Dataset,
         of batch size 1, it's a tensor of shape (1,)).
     """
     """INSERT YOUR CODE HERE, overrun return."""
-    return np.random.rand(256, 256, 3), torch.randint(0, 2, (1,))
+    from pytorch_grad_cam import GradCAM
+    from pytorch_grad_cam.utils.model_targets import ClassifierOutputTarget
+    from pytorch_grad_cam.utils.image import show_cam_on_image
+
+    image, label = next(iter(DataLoader(test_dataset, batch_size=1, shuffle=True)))
+    image = image.to(device)
+    label = label.to(device)
+
+    target_layers = [model.conv3]
+
+    targets = [ClassifierOutputTarget(label.item())]
+
+    # Construct the CAM object
+    cam = GradCAM(model=model, target_layers=target_layers)
+    # You can also pass aug_smooth=True and eigen_smooth=True, to apply smoothing.
+    grayscale_cam = cam(input_tensor=image, targets=targets)
+    grayscale_cam = grayscale_cam[0, :]
+
+    img_array = image[0].numpy()
+    # Normalize the pixel values to the range [0, 1]
+    image_normalized = img_array / 255.0
+    visualization = show_cam_on_image(np.transpose(image_normalized, (1, 2, 0)), grayscale_cam, use_rgb=True)
+
+    return visualization, label
+
 
 
 def main():
