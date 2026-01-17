@@ -67,7 +67,7 @@ def get_grad_cam_visualization(test_dataset: torch.utils.data.Dataset,
     # Construct the CAM object
     cam = GradCAM(model=model, target_layers=target_layers)
     # You can also pass aug_smooth=True and eigen_smooth=True, to apply smoothing.
-    grayscale_cam = cam(input_tensor=image, targets=targets)
+    grayscale_cam = cam(input_tensor=image, targets=targets, aug_smooth=True, eigen_smooth=True)
     grayscale_cam = grayscale_cam[0, :]
 
     img_array = image[0].numpy()
